@@ -3,10 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #define MAX_CMD_LEN 2024
 #define MAX_ARGS_AMOUNT 24
 #define MAX_CMD_AMOUNT 24
+
+char *trim(char *str);
 
 int main() {
     char userInput[MAX_CMD_LEN];
@@ -27,20 +30,29 @@ int main() {
         strtok_r(userInput, ">", &fileExit);
         if (fileExit[0] == '\0')
             fileExit = 0;
+        else
+            trim(fileExit);
+        trim(userInput);
 
         ///Split Commands
         char *cmds[MAX_CMD_AMOUNT];
         cmds[0] = strtok(userInput, "|");
-        for (int i = 0; cmds[i] != NULL; i++)
+        trim(cmds[0]);
+        for (int i = 0; cmds[i] != NULL; i++) {
             cmds[i + 1] = strtok(NULL, "|");
+            trim(cmds[i + 1]);
+        }
 
         ///Loop each command
         for (int i = 0; cmds[i] != NULL; i++) {
             ///Split Arguments
             char *args[MAX_ARGS_AMOUNT];
             args[0] = strtok(cmds[i], " ");
-            for (int j = 0; args[j] != NULL; j++)
+            trim(args[0]);
+            for (int j = 0; args[j] != NULL; j++) {
                 args[j + 1] = strtok(NULL, " ");
+                trim(args[j + 1]);
+            }
 
             ///Fork
             pid_t pid = fork();
@@ -56,4 +68,38 @@ int main() {
         }
     }
     return 0;
+}
+
+char *trim(char *str) {
+
+    if (str == NULL)
+        return NULL;
+
+    //Set head to start of string
+    char *head = str;
+
+    //Set tail to end of string
+    char *tail = NULL;
+    size_t len = strlen(str);
+    tail = str + len - 1;
+
+    //Move head until it isn't a white space
+    while (isspace((unsigned char) *head))
+        ++head;
+
+    //Move tail until it isn't a white space
+    while (isspace((unsigned char) *tail))
+        --tail;
+
+    //Set new string start
+    if (str + len - 1 != tail)
+        *(tail + 1) = '\0';
+
+    //Set new string end
+    tail = str;
+    while (*head)
+        *tail++ = *head++;
+    *tail = '\0';
+
+    return str;
 }
