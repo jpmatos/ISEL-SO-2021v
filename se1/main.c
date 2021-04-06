@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #define MAX_CMD_LEN 2024
 #define MAX_ARGS_AMOUNT 24
@@ -43,8 +44,26 @@ int main() {
             trim(cmds[i + 1]);
         }
 
+        ///Open file if there was a pipe
+        int fileFd = 0;
+        if (fileExit != NULL) {
+            fileFd = open(fileExit, O_WRONLY | O_CREAT, 0666);
+        }
+
         ///Loop each command
+        int fildesOldRead;
+        int fildes[2];
+        pipe(fildes);       //0-read 1-write
         for (int i = 0; cmds[i] != NULL; i++) {
+
+            /// Set up pipes for this loop
+            if(i != 0){
+                if(i != 1)
+                    close(fildesOldRead);
+                fildesOldRead = fildes[0];
+                pipe(fildes);
+            }
+
             ///Split Arguments
             char *args[MAX_ARGS_AMOUNT];
             args[0] = strtok(cmds[i], " ");
@@ -57,15 +76,44 @@ int main() {
             ///Fork
             pid_t pid = fork();
             if (pid == 0) {
-                ///Execute the command
-                execvp(args[0], args);
+                ///Child Process
+
+                ///If not last command: Connect current command's stdout to pipe-in
+                if (cmds[i + 1] != NULL) {
+                    close(STDOUT_FILENO);
+                    dup2(fildes[1], STDOUT_FILENO);
+                }
+                    ///If it is last command: Check to see if a output file was open and
+                    ///connect current command's stdout to said file
+                else if (fileFd != 0) {
+                    close(STDOUT_FILENO);
+                    dup2(fileFd, STDOUT_FILENO);
+                }
+
+                ///If not the first command: Connect stdin to pipe-out (previous command stdout)
+                if (i != 0) {
+                    close(STDIN_FILENO);
+                    dup2(fildesOldRead, STDIN_FILENO);
+                }
+
+                ///Execute the command (Current child becomes said command)
+                execvp(cmds[i], args);
                 puts("SHOULD NEVER RUN");
             } else {
+                ///Parent Process
+
+                ///Close pipe-in
+                close(fildes[1]);
+
                 ///Wait for child to finish
                 int res;
                 waitpid(pid, &res, 0);
             }
         }
+
+        ///Close file if one was open
+        if (fileFd != 0)
+            close(fileFd);
     }
     return 0;
 }
