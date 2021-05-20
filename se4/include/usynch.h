@@ -7,7 +7,7 @@
 //   User threads supporting cooperative multithreading.
 //
 // Authors:
-//   Carlos Martins, Jo�o Trindade, Duarte Nunes, Jorge Martins
+//   Carlos Martins, João Trindade, Duarte Nunes, Jorge Martins
 // 
 
 #pragma once
@@ -34,6 +34,9 @@ void event_set(event_t * event);
 INLINE bool event_value(event_t * event) {
 	return event->signaled; 
 }
+
+// For testing purposes
+uthread_t * get_wblock_thread(event_t *event);
 
 
 //
@@ -66,4 +69,15 @@ void sem_wait(semaphore_t * sem, int units);
 //
 void sem_post(semaphore_t * sem, int units);
 
-uthread_t * get_wblock_thread(event_t *event);
+
+//
+// A Cyclic Barrier
+//
+typedef struct cyclic_barrier {
+    list_entry_t waiters;
+    uint32_t parties;
+} cyclic_barrier_t;
+
+void cb_init(cyclic_barrier_t * barrier, uint32_t parties);
+
+uint32_t cb_await(cyclic_barrier_t * barrier);

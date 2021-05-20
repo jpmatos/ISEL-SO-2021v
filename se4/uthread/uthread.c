@@ -46,9 +46,10 @@ typedef struct uthread_context {
 struct uthread {
 	uthread_context_t * context;
 	list_entry_t        entry;
+	int32_t             priority;
 	char *              state;
-	void             (* function)(void *);   
-	void *              argument; 
+	void             (* function)(void *);
+	void *              argument;
 	void *              stack;
 };
 
@@ -160,6 +161,26 @@ static inline void schedule () {
 	context_switch(running_thread, next_thread);
 }
 
+//
+// Finds the list entry where priority should be put in
+//
+static inline list_entry_t * find_priority_entry(int32_t priority) {
+    list_entry_t * curr;
+    curr = get_list_first(&ready_queue);
+    if(is_list_empty(&ready_queue))
+        return curr;
+
+    int32_t curr_priority = container_of(curr, uthread_t, entry)->priority;
+    if(curr_priority < priority)
+        return curr->prev;
+
+    while (curr_priority >= priority && curr != &ready_queue) {
+        curr = curr->next;
+        curr_priority = container_of(curr, uthread_t, entry)->priority;
+    }
+    return curr->prev;
+}
+
 
 ///////////////////////////////
 //
@@ -193,7 +214,7 @@ void ut_run() {
 	// There can be only one scheduler instance running.
 	//
 	assert(running_thread == NULL);
-	
+
 	//
 	// At least one user thread must have been created before calling run.
 	//
@@ -202,11 +223,18 @@ void ut_run() {
 	}
 
 	//
+	// Set priority to 0
+	//
+	thread.priority = 0;
+
+	//
 	// Switch to a user thread.
 	//
 	main_thread = &thread;
 	running_thread = main_thread;
+	set_ready(main_thread);
 	schedule();
+	set_running(main_thread);
 
 	//
 	// When we get here, there are no more runnable user threads.
@@ -227,10 +255,10 @@ void ut_run() {
 // the next ready thread.
 //
 void ut_exit() {
-	number_of_threads -= 1;	
-	
+	number_of_threads -= 1;
+
 	internal_exit(running_thread, extract_next_thread());
-	
+
 	assert(!"Supposed to be here!");
 }
 
@@ -241,7 +269,9 @@ void ut_exit() {
 void ut_yield() {
 	if (!is_list_empty(&ready_queue)) {
 	    set_ready(running_thread);
-		insert_list_last(&ready_queue, &running_thread->entry);
+//		insert_list_last(&ready_queue, &running_thread->entry);
+        list_entry_t * entry = find_priority_entry(running_thread->priority);
+        insert_list_after(entry, &running_thread->entry);
 		schedule();
 	}
 }
@@ -267,17 +297,21 @@ void ut_deactivate() {
 //
 void ut_activate(uthread_t * thread) {
     set_ready(thread);
-	insert_list_last(&ready_queue, &(thread->entry));
+//	insert_list_last(&ready_queue, &(thread->entry));
+    list_entry_t * entry = find_priority_entry(thread->priority);
+    insert_list_after(entry, &(thread->entry));
 }
 
 char* ut_state(uthread_t * thread) {
     return thread->state;
 }
 
+uint32_t ut_priority(uthread_t * thread) {
+    return thread->priority;
+}
+
 uthread_t * ut_first() {
-    return is_list_empty(&ready_queue) ?
-           NULL :
-           container_of(get_list_first(&ready_queue), uthread_t, entry);
+    return container_of(get_list_first(&ready_queue), uthread_t, entry);
 }
 
 
@@ -292,7 +326,7 @@ uthread_t * ut_first() {
 //
 void internal_start() {
 	running_thread->function(running_thread->argument);
-	ut_exit(); 
+	ut_exit();
 }
 
 //
@@ -307,10 +341,14 @@ void internal_cleanup(uthread_t * thread) {
 // Creates a user thread to run the specified function. The thread is
 // placed at the end of the ready queue.
 //
-uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
+uthread_t* ut_create(void (*start_routine)(void *), void * arg, int32_t priority) {
+
+    if(priority < 0 || priority > 3 )
+        priority = 3;
+
 	uthread_t * thread;
-	
-	//
+
+	//(int32_t *)
 	// Dynamically allocate an instance of uthread_t and the associated stack.
 	//
 	thread = (uthread_t *) malloc(sizeof (uthread_t));
@@ -322,21 +360,24 @@ uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
 	//
 	memset(thread->stack, 0, STACK_SIZE);
 
+    // Set priority
+    thread->priority = priority;
+
 	//
 	// Memorize function and argument for use in internal_start.
 	//
 	thread->function = start_routine;
 	thread->argument = arg;
-	
+
 	//
 	// Map an uthread_context_t instance on the thread's stack.
 	// We'll use it to save the initial context of the thread.
 	//
 	// +------------+  <- Highest word of a thread's stack space
 	// | 0x00000000 |    (needs to be set to 0 for Visual Studio to
-	// +------------+      correctly present a thread's call stack).  
-	// +============+       
-	// |  RetAddr   | \.   
+	// +------------+      correctly present a thread's call stack).
+	// +============+
+	// |  RetAddr   | \.
 	// +------------+  |
 	// |    RBP     |  |
 	// +------------+  |
@@ -368,7 +409,7 @@ uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
 		STACK_SIZE - sizeof (uthread_context_t) - sizeof (uint64_t));
 
 	//
-	// Set the thread's initial context by initializing the values of 
+	// Set the thread's initial context by initializing the values of
 	// registers that must be saved by the callee (R15, R14, R13, R12,
 	// RSI, RDI, RBCX, RBP)
 	//
@@ -379,18 +420,16 @@ uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
 	thread->context->r15 = 0x55555555;
 	thread->context->r14 = 0x44444444;
 	thread->context->r13 = 0x33333333;
-	thread->context->r12 = 0x22222222;	
+	thread->context->r12 = 0x22222222;
 	thread->context->rbx = 0x11111111;
-	thread->context->rbp = 0x00000000;		
+	thread->context->rbp = 0x00000000;
 	thread->context->ret_addr = internal_start;
-
-    set_ready(thread);
 
 	//
 	// Ready the thread.
 	//
 	number_of_threads += 1;
 	ut_activate(thread);
-	
+
 	return thread;
 }

@@ -7,7 +7,7 @@
 //   User threads supporting cooperative multithreading.
 //
 // Authors:
-//   Carlos Martins, João Trindade, Duarte Nunes, Jorge Martins
+//   Carlos Martins, Joï¿½o Trindade, Duarte Nunes, Jorge Martins
 // 
 
 #pragma once
@@ -22,11 +22,14 @@
 typedef struct waitblock {
 	list_entry_t entry;
 	uthread_t * thread;
+	uint32_t priority;
 } waitblock_t;
 
 //
 // Initializes the specified wait block.
 //
 INLINE void init_waitblock(waitblock_t * waitblock) {
-	waitblock->thread = ut_self();
+    uthread_t* thread = ut_self();
+    waitblock->thread = thread;
+    waitblock->priority = ut_priority(thread);
 }

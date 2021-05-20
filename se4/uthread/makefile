@@ -1,10 +1,10 @@
 all: libuthread.so libuthread.a
 
-libuthread.so: uthread.o event.o semaphore.o ctxswitch.o
-	gcc -o libuthread.so -shared uthread.o event.o semaphore.o ctxswitch.o
+libuthread.so: uthread.o event.o semaphore.o ctxswitch.o cyclic_barrier.o
+	gcc -o libuthread.so -shared uthread.o event.o semaphore.o ctxswitch.o cyclic_barrier.o
 
-libuthread.a: uthread_nogot.o event_nogot.o semaphore_nogot.o ctxswitch.o
-	ar rcv libuthread.a uthread_nogot.o event_nogot.o semaphore_nogot.o ctxswitch.o
+libuthread.a: uthread_nogot.o event_nogot.o semaphore_nogot.o ctxswitch.o cyclic_barrier_nogot.o
+	ar rcv libuthread.a uthread_nogot.o event_nogot.o semaphore_nogot.o ctxswitch.o cyclic_barrier_nogot.o
 
 #
 # uthread core
@@ -28,12 +28,18 @@ event.o: event.c
 	
 semaphore.o: semaphore.c
 	gcc -c -g -fPIC -Wall -I ../include semaphore.c 
-
+	
+cyclic_barrier.o: cyclic_barrier.c
+	gcc -c -g -fPIC -Wall -I ../include cyclic_barrier.c
+	
 event_nogot.o: event.c
 	gcc -c -g -o event_nogot.o -Wall -I ../include event.c 
 	
 semaphore_nogot.o: semaphore.c
-	gcc -c -g -o semaphore_nogot.o -Wall -I ../include semaphore.c 
+	gcc -c -g -o semaphore_nogot.o -Wall -I ../include semaphore.c
+	
+cyclic_barrier_nogot.o: cyclic_barrier.c
+	gcc -c -g -o cyclic_barrier_nogot.o -Wall -I ../include cyclic_barrier.c 
 
 		
 clean:

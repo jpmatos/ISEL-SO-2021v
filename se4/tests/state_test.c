@@ -1,8 +1,5 @@
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "uthread.h"
@@ -49,7 +46,7 @@ void func1(void * arg){
     //This is the thread that was blocked
     thread = ut_first();
     state = ut_state(thread);
-    printf("First Thread In Queue State: %s\n", state);
+    printf("Unblocked Thread State: %s\n", state);
     assert(strcmp(state, "Ready") == 0);
 }
 
@@ -59,9 +56,10 @@ void test1(){
     event_t done;
     event_init(&done);
 
-    ut_create(waiter, &done);
-    ut_create(func1, &done);
-    ut_create(notifier, &done);
+
+    ut_create(waiter, &done, 1);
+    ut_create(func1, &done, 1);
+    ut_create(notifier, &done, 1);
     ut_run();
 
     printf("\n :: Test 1 - END :: \n\n");

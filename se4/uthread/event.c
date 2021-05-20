@@ -37,6 +37,8 @@ void event_set(event_t *event) {
     }
 }
 
+
+//For testing purposes
 uthread_t * get_wblock_thread(event_t *event) {
     if (is_list_empty(&(event->waiters)))
         return NULL;

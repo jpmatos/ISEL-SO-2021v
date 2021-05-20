@@ -8,7 +8,9 @@
 //
 // Authors:
 //   Carlos Martins, Jo�o Trindade, Duarte Nunes, Jorge Martins
-// 
+//
+
+#include <stdint.h>
 
 #ifndef UTHREAD_H
 #define UTHREAD_H
@@ -37,7 +39,7 @@ void ut_run();
 // Creates a user thread to run the specified function, passing it arg as argument.
 // The new thread is placed at the end of the ready queue.
 //
-uthread_t * ut_create(void (*start_routine)(void *), void * arg);
+uthread_t * ut_create(void (*start_routine)(void *), void * arg, int32_t priority);
 
 //
 // Terminates the execution of the currently running thread. All associated
@@ -68,6 +70,8 @@ void ut_deactivate();
 void ut_activate(uthread_t * handle);
 
 char* ut_state(uthread_t * thread);
+
+uint32_t ut_priority(uthread_t * thread);
 
 uthread_t * ut_first();
 

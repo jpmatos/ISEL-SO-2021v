@@ -58,7 +58,7 @@ void test1 ()  {
 	printf("\n :: Test 1 - BEGIN :: \n\n");
 
 	for (index = 0; index < MAX_THREADS; ++index) {
-		ut_create(test1_thread, (void *) ('0' + index));
+		ut_create(test1_thread, (void *) ('0' + index), 3);
 	}   
 
 	ut_run();
@@ -88,8 +88,8 @@ void func2(void * arg) {
 void test2() {
 	printf("\n :: Test 2 - BEGIN :: \n\n");
 	
-	ut_create(func1, NULL);
-	ut_create(func2, NULL);
+	ut_create(func1, NULL, 3);
+	ut_create(func2, NULL, 3);
 	ut_run();
 
 	printf("\n\n :: Test 2 - END :: \n");

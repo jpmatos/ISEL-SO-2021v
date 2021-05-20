@@ -35,8 +35,8 @@ void event_test() {
 	
 	event_init(&done);
 	
-	ut_create(waiter, &done);
-	ut_create(notifier, &done);
+	ut_create(waiter, &done, 3);
+	ut_create(notifier, &done, 3);
 	
 	ut_run();
 	

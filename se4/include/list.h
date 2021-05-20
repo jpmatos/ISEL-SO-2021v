@@ -92,6 +92,12 @@ INLINE void insert_list_last(list_entry_t * listhead, list_entry_t * entry) {
 	insert_list_after(listhead->prev, entry);
 }
 
+// Inserts the specified entry at the right priority
+//
+INLINE void insert_list_priority(list_entry_t * listhead, list_entry_t * entry, int32_t priority) {
+    //TODO
+}
+
 // Inserts the specified entry at the head of the list.
 //
 // The attribute always_inline force inline even without compiling with optimizations
@@ -104,6 +110,18 @@ INLINE void insert_list_first(list_entry_t * listhead, list_entry_t * entry) {
 INLINE list_entry_t * get_list_first(list_entry_t * listhead) {
     list_entry_t * entry = listhead->next;
     return entry;
+}
+
+//Calculates list length
+//
+INLINE uint32_t list_length(list_entry_t * listhead) {
+    uint32_t count = 0;
+    list_entry_t * curr = listhead;
+    while (curr->next != listhead){
+        curr = curr->next;
+        count += 1;
+    }
+    return count;
 }
 
 #endif
