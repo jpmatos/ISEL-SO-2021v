@@ -39,7 +39,7 @@ void test1_thread (void * argument) {
 	uint64_t index;
 	c = (uint8_t) (uint64_t) argument;	
 	 
-	for (index = 0; index < 100; ++index) {
+	for (index = 0; index < 20; ++index) {
 	    putchar(c); fflush(stdout);
 		 
 	    if ((rand() % 4) == 0) {

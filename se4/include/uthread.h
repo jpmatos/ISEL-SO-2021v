@@ -7,7 +7,7 @@
 //   User threads supporting cooperative multithreading.
 //
 // Authors:
-//   Carlos Martins, João Trindade, Duarte Nunes, Jorge Martins
+//   Carlos Martins, Joï¿½o Trindade, Duarte Nunes, Jorge Martins
 // 
 
 #ifndef UTHREAD_H
@@ -66,5 +66,9 @@ void ut_deactivate();
 // making it eligible to run.
 //
 void ut_activate(uthread_t * handle);
+
+char* ut_state(uthread_t * thread);
+
+uthread_t * ut_first();
 
 #endif

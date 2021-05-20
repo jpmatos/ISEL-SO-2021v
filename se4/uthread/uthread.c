@@ -46,6 +46,7 @@ typedef struct uthread_context {
 struct uthread {
 	uthread_context_t * context;
 	list_entry_t        entry;
+	char *              state;
 	void             (* function)(void *);   
 	void *              argument; 
 	void *              stack;
@@ -125,6 +126,21 @@ void internal_cleanup(uthread_t * thread);
 //
 
 //
+// Set thread state
+//
+static inline void set_running(uthread_t * thread) {
+    thread->state = strdup("Running");
+}
+
+static inline void set_ready(uthread_t * thread) {
+    thread->state = strdup("Ready");
+}
+
+static inline void set_blocked(uthread_t * thread) {
+    thread->state = strdup("Blocked");
+}
+
+//
 // Returns and removes the first user thread in the ready queue. If the ready
 // queue is empty, the main thread is returned.
 //
@@ -140,6 +156,7 @@ static inline uthread_t * extract_next_thread() {
 static inline void schedule () {
 	uthread_t * next_thread;
     next_thread = extract_next_thread();
+    set_running(next_thread);
 	context_switch(running_thread, next_thread);
 }
 
@@ -223,6 +240,7 @@ void ut_exit() {
 //
 void ut_yield() {
 	if (!is_list_empty(&ready_queue)) {
+	    set_ready(running_thread);
 		insert_list_last(&ready_queue, &running_thread->entry);
 		schedule();
 	}
@@ -239,6 +257,7 @@ uthread_t* ut_self() {
 // Halts the execution of the current user thread.
 //
 void ut_deactivate() {
+    set_blocked(running_thread);
 	schedule();
 }
 
@@ -247,7 +266,18 @@ void ut_deactivate() {
 // making it eligible to run.
 //
 void ut_activate(uthread_t * thread) {
+    set_ready(thread);
 	insert_list_last(&ready_queue, &(thread->entry));
+}
+
+char* ut_state(uthread_t * thread) {
+    return thread->state;
+}
+
+uthread_t * ut_first() {
+    return is_list_empty(&ready_queue) ?
+           NULL :
+           container_of(get_list_first(&ready_queue), uthread_t, entry);
 }
 
 
@@ -288,7 +318,7 @@ uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
 	assert(thread != NULL && thread->stack != NULL);
 
 	//
-	// Zero the stack for emotional confort.
+	// Zero the stack for emotional comfort.
 	//
 	memset(thread->stack, 0, STACK_SIZE);
 
@@ -353,6 +383,8 @@ uthread_t* ut_create(void (*start_routine)(void *), void * arg) {
 	thread->context->rbx = 0x11111111;
 	thread->context->rbp = 0x00000000;		
 	thread->context->ret_addr = internal_start;
+
+    set_ready(thread);
 
 	//
 	// Ready the thread.

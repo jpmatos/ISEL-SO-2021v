@@ -7,7 +7,7 @@
 //   User threads supporting cooperative multithreading.
 //
 // Authors:
-//   Carlos Martins, João Trindade, Duarte Nunes, Jorge Martins
+//   Carlos Martins, Joï¿½o Trindade, Duarte Nunes, Jorge Martins
 // 
 
 #ifndef LIST_H
@@ -97,6 +97,13 @@ INLINE void insert_list_last(list_entry_t * listhead, list_entry_t * entry) {
 // The attribute always_inline force inline even without compiling with optimizations
 INLINE void insert_list_first(list_entry_t * listhead, list_entry_t * entry) {
 	insert_list_after(listhead, entry);
+}
+
+// Gets the entry that is first in the list.
+//
+INLINE list_entry_t * get_list_first(list_entry_t * listhead) {
+    list_entry_t * entry = listhead->next;
+    return entry;
 }
 
 #endif

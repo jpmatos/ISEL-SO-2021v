@@ -7,7 +7,7 @@
 //   User threads supporting cooperative multithreading.
 //
 // Authors:
-//   Carlos Martins, João Trindade, Duarte Nunes, Jorge Martins
+//   Carlos Martins, Joï¿½o Trindade, Duarte Nunes, Jorge Martins
 // 
 
 #pragma once
@@ -65,3 +65,5 @@ void sem_wait(semaphore_t * sem, int units);
 // unblocking waiting threads.
 //
 void sem_post(semaphore_t * sem, int units);
+
+uthread_t * get_wblock_thread(event_t *event);
